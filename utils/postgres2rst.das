@@ -16,6 +16,7 @@ require daslib/profiler_boost
 // prose-side in the boost intro.
 require postgres/postgres_boost
 require postgres/postgres_provider
+require postgres/postgres_migrate
 
 def document_module_postgres_boost() {
     var mod = find_module("postgres_boost")
@@ -42,6 +43,15 @@ def document_module_postgres_provider() {
     document("postgres_provider — SqlProviderInfo registration shim", mod, "postgres_provider.rst", groups)
 }
 
+def document_module_postgres_migrate() {
+    var mod = find_module("postgres_migrate")
+    var groups <- array<DocGroup>(
+        group_by_regex("Convenience", mod, %regex~^with_latest_postgres$%%),
+        hide_group(group_by_regex("Engine glue hooks (see PROVIDER_CONTRACT §Migrations)", mod, %regex~^(_migration_|_swallow).*%%))
+    )
+    document("postgres_migrate — migrations glue over daslib/sql_migrate", mod, "postgres_migrate.rst", groups)
+}
+
 // dasPostgreSQL repo root, derived from a loaded module's own source path so docs
 // generate correctly under both -load_module (dev) and daspkg-install (CI),
 // without assuming the package lives under <das_root>/modules/.
@@ -62,5 +72,6 @@ def main {
 
         document_module_postgres_boost()
         document_module_postgres_provider()
+        document_module_postgres_migrate()
     }
 }
