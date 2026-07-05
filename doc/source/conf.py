@@ -34,8 +34,8 @@ project = u'dasPostgreSQL documentation'
 copyright = '2026-%s, Gaijin Entertainment' % time.strftime('%Y')
 author = u'Boris Batkin'
 
-version = u'1.5'
-release = u'1.5.4'
+version = u'18.4'
+release = u'18.4'
 
 language = 'en'
 
