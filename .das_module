@@ -6,7 +6,7 @@ def initialize(project_path : string) {
     if (das_is_dll_build()) {
         register_dynamic_module("{project_path}/dasModulePostgreSQL.shared_module", "Module_dasPOSTGRESQL")
     }
-    let postgres_paths = ["postgres_stmt", "postgres_boost", "postgres_provider"]
+    let postgres_paths = ["postgres_stmt", "postgres_boost", "postgres_provider", "postgres_migrate"]
     for (path in postgres_paths) {
         register_native_path("postgres", "{path}", "{project_path}/daslib/{path}.das")
     }

@@ -842,6 +842,40 @@ def insert(db : SqlRunner; row : auto(TT)) : int64 {
     return r |> unwrap
 }
 
+def try_insert(db : SqlRunner; row : auto(TT); name : string) : Result<int64, string> {
+    //! Inserts a single row into table identifier ``name`` instead of T's own ``[sql_table(name=...)]``.
+    //! Used during a struct_convert rebuild to write into the staging table before the rename swap.
+    //! Same PK semantics as ``try_insert(row)`` — but note a staging table made from the generated
+    //! DDL has no identity default, so pk-unset rows only work against T's own table.
+    let pk_unset = _::_sql_pk_is_unset(row)
+    let base_sql = (pk_unset
+        ? _::_sql_insert_no_pk_sql(default<TT>, name)
+        : _::_sql_insert_with_pk_sql(default<TT>, name))
+    let pk_name = _single_int_pk_name(_::_sql_column_info(default<TT>))
+    if (empty(pk_name)) {
+        let r = db |> try_step_dml(base_sql, $(var stmt : PgStmt?) {
+            _::_sql_bind_row(stmt, row, !pk_unset)
+        }, "insert")
+        if (r |> is_err) return err(r |> unwrap_err, type<int64>)
+        return ok(int64(0), type<string>)
+    }
+    let sql = "{base_sql} RETURNING {sql_quote_id(pk_name)}"
+    return <- db |> try_one_row(sql, $(var stmt : PgStmt?) {
+        _::_sql_bind_row(stmt, row, !pk_unset)
+    }, $(var ps : PgStmt?) : int64 {
+        return to_int64(PQgetvalue(ps.res, ps.row, 0))
+    }, "insert")
+}
+
+def insert(db : SqlRunner; row : auto(TT); name : string) : int64 {
+    //! Strict variant of ``try_insert(row, name)``. Panics with the libpq errmsg on failure.
+    let r = db |> try_insert(row, name)
+    if (r |> is_err) {
+        panic(r |> unwrap_err)
+    }
+    return r |> unwrap
+}
+
 def try_insert(db : SqlRunner; rows : array<auto(TT)>) : Result<int64, string> {
     //! Batched INSERT inside a single transaction (joins an ambient one). All rows
     //! must agree on PK presence. ``Ok(last pk)`` on success.

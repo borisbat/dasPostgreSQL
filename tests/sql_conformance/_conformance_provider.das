@@ -10,7 +10,12 @@ module _conformance_provider shared public
 //! are dropped from this copy (caps.fts5 and caps.client_udfs are both off — PG has
 //! neither FTS5 nor client-side UDFs; see the README's capability-skip policy).
 
+// The migration glue is required before the boost — mirrors the main-repo shim, where
+// requiring the boost first can resurrect a stale shared-module generation after
+// intentionally-failing compile tests in the same dastest process (daslang
+// shared-module promotion bug; see the main repo's shim for the minimal repro).
 require postgres
+require postgres/postgres_migrate public
 require postgres/postgres_boost public
 require daslib/sql_linq public
 require daslib/fio
