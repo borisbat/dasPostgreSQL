@@ -1,0 +1,19 @@
+options gen2
+require daslib/daspkg
+
+[export]
+def package() {
+    package_name("dasPostgreSQL")
+    package_description("PostgreSQL (libpq) bindings and SQL LINQ provider for daslang")
+    package_author("borisbat")
+    package_license("MIT")
+    package_source("github.com/borisbat/dasPostgreSQL")
+    package_tag("sql")
+    package_tag("database")
+    package_tag("postgresql")
+}
+
+[export]
+def build() {
+    cmake_build()
+}
