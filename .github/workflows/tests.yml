@@ -1,0 +1,113 @@
+name: Conformance tests
+
+# Runs the SQL provider conformance suite (tests/sql_conformance — the shared
+# suite from the daslang repo with the shim swapped to PostgreSQL) against a
+# fresh daslang build and a live PostgreSQL server. Mirrors dasDuckDB's
+# tests.yml plus the server: ubuntu gets a postgres service container; macOS
+# has no service containers, so brew's postgresql@18 runs as a local process.
+#
+# fail-fast:false so all OSes report. Windows is deferred (mirrors the
+# dasDuckDB matrix note: the daslang build fastfails on the CI runner only;
+# the module builds and the suite passes locally under MSVC).
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ${{ matrix.os }}
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: "Checkout daslang"
+        uses: actions/checkout@v4
+        with:
+          repository: GaijinEntertainment/daScript
+          path: daslang-src
+          ref: master
+
+      - name: "Checkout dasPostgreSQL"
+        uses: actions/checkout@v4
+        with:
+          path: dasPostgreSQL
+
+      - name: "Install system dependencies + start PostgreSQL (Linux)"
+        # docker step instead of a `services:` block — the macOS matrix leg has
+        # no docker host, and per-leg service conditionals are not supported.
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
+          docker run -d --name pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:18
+          for i in $(seq 1 30); do
+            docker exec pg pg_isready -U postgres && break
+            sleep 1
+          done
+          echo "DAS_PG_CONNINFO=host=localhost port=5432 user=postgres dbname=postgres" >> "$GITHUB_ENV"
+
+      - name: "Install system dependencies + start PostgreSQL (macOS)"
+        if: matrix.os == 'macos-latest'
+        run: |
+          set -eux
+          brew install bison libpq postgresql@18
+          echo "/opt/homebrew/opt/bison/bin" >> "$GITHUB_PATH"
+          echo "PostgreSQL_ROOT=$(brew --prefix libpq)" >> "$GITHUB_ENV"
+          PGBIN="$(brew --prefix postgresql@18)/bin"
+          "$PGBIN/initdb" -D "$RUNNER_TEMP/pgdata" -U postgres --auth=trust -E UTF8 --no-locale
+          "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/pgdata" -o "-p 5499" -l "$RUNNER_TEMP/pg.log" -w start
+          echo "DAS_PG_CONNINFO=host=localhost port=5499 user=postgres dbname=postgres" >> "$GITHUB_ENV"
+
+      - name: "Install CMake and Ninja"
+        uses: lukka/get-cmake@latest
+
+      - name: "Set up sccache"
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: "Build daslang"
+        working-directory: daslang-src
+        run: |
+          set -eux
+          cmake --no-warn-unused-cli -B./build \
+            -DCMAKE_BUILD_TYPE:STRING=Release \
+            -DDAS_LLVM_DISABLED=ON \
+            -DDAS_HV_DISABLED=ON \
+            -DDAS_GLFW_DISABLED=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            -G Ninja
+          cmake --build ./build --parallel --target daslang
+          sccache --show-stats
+          echo "BIN_DIR=bin" >> "$GITHUB_ENV"
+
+      - name: "daspkg install dasPostgreSQL (global)"
+        # cmake_build finds the system libpq (PostgreSQL_ROOT env on macOS) and
+        # builds dasModulePostgreSQL.shared_module.
+        working-directory: daslang-src
+        run: |
+          set -eux
+          ${BIN_DIR}/daslang utils/daspkg/main.das -- install ../dasPostgreSQL --global
+
+      - name: "Run SQL provider conformance suite"
+        working-directory: daslang-src
+        run: |
+          set -eux
+          ${BIN_DIR}/daslang dastest/dastest.das -- \
+            --test modules/dasPostgreSQL/tests/sql_conformance \
+            --timeout 300

@@ -88,29 +88,17 @@ class PostgresGen : CppGenBind {
         // to `unsigned long long`/`long long`, which is a DIFFERENT type from LP64
         // Linux's `unsigned long`-flavored uint64_t — the generated makeExtern then
         // fails under gcc (same trap as dasDuckDB's duckdb_validity_* skip).
-        if (fname |> starts_with("PQescape") || fname == "PQunescapeBytea" || fname == "PQresultMemorySize") {
-            return true
-        }
-        if (fname == "PQsocketPoll" || fname == "PQgetCurrentTimeUSec") {
-            return true
-        }
-        // large objects (also pg_int64 carriers in the 64-bit forms)
-        if (fname |> starts_with("lo_")) {
-            return true
-        }
-        // FILE* printers/tracers
-        if (fname == "PQtrace" || fname == "PQuntrace" || fname == "PQprint" || fname == "PQdisplayTuples" || fname == "PQprintTuples") {
-            return true
-        }
-        // struct-array returns (PQconninfoOption*) + PGnotify* + PGresAttDesc consumers
-        if (fname == "PQconndefaults" || fname == "PQconninfo" || fname == "PQconninfoParse" || fname == "PQconninfoFree") {
-            return true
-        }
-        if (fname == "PQnotifies" || fname == "PQfreeNotify" || fname == "PQsetResultAttrs" || fname == "PQfn") {
-            return true
-        }
-        // SSL introspection returning void* / library-internal structs
-        if (fname == "PQgetssl" || fname == "PQsslStruct") {
+        if (fname |> starts_with("PQescape") || fname == "PQunescapeBytea" || fname == "PQresultMemorySize"
+                || fname == "PQsocketPoll" || fname == "PQgetCurrentTimeUSec"
+                // large objects (also pg_int64 carriers in the 64-bit forms)
+                || fname |> starts_with("lo_")
+                // FILE* printers/tracers
+                || fname == "PQtrace" || fname == "PQuntrace" || fname == "PQprint" || fname == "PQdisplayTuples" || fname == "PQprintTuples"
+                // struct-array returns (PQconninfoOption*) + PGnotify* + PGresAttDesc consumers
+                || fname == "PQconndefaults" || fname == "PQconninfo" || fname == "PQconninfoParse" || fname == "PQconninfoFree"
+                || fname == "PQnotifies" || fname == "PQfreeNotify" || fname == "PQsetResultAttrs" || fname == "PQfn"
+                // SSL introspection returning void* / library-internal structs
+                || fname == "PQgetssl" || fname == "PQsslStruct") {
             return true
         }
         let funf = to_upper(clang_getCursorLocationFileName(c))
