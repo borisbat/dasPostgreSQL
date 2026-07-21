@@ -1,4 +1,5 @@
 options gen2
+options _comment_hygiene = true
 options indenting = 4
 options no_unused_block_arguments = false
 options no_unused_function_arguments = false
@@ -23,8 +24,7 @@ struct private ConfM1 {
 
 [sql_migration(version = 1, description = "create conf_m1")]
 def private conf_migration_v1(db : SqlRunner) {
-    // quoted identifiers: unquoted names case-fold on PostgreSQL, and the
-    // [sql_table] read-back below emits quoted "Id"/"X"
+    // quoted idents: PostgreSQL case-folds unquoted names, and the [sql_table] read-back emits "Id"/"X"
     db |> exec("CREATE TABLE conf_m1 (\"Id\" INTEGER PRIMARY KEY, \"X\" INTEGER)")
 }
 
