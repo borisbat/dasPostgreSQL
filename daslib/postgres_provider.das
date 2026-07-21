@@ -1,4 +1,5 @@
 options gen2
+options _comment_hygiene = true
 options indenting = 4
 options no_unused_function_arguments = false
 options strict_smart_pointers
@@ -101,17 +102,15 @@ def private _postgres_make_stmt_type() : TypeDeclPtr => qmacro_type(type<PgStmt?
 // reader-block parameter stays mutable (the runner helpers declare it `var` to match).
 def private _postgres_make_stmt_type_const() : TypeDeclPtr => qmacro_type(type<PgStmt?>)
 
-// "?" like the SQLite reference: every SQL string (chain SQL, upsert row-binds,
-// generated per-table CRUD) carries `?` markers whose text order IS the bind-index
-// order; postgres_boost renumbers them to $1,$2,... in one quote-aware pass right
+// "?" like the SQLite reference: every SQL string carries `?` markers whose text order IS the
+// bind-index order; postgres_boost renumbers them to $1,$2,... in one quote-aware pass right
 // before PQexecParams (libpq accepts only the $n style).
 [unused_argument(ordinal)]
 def private _postgres_render_placeholder(ordinal : int) : string => "?"
 
-// jsonb_path_query_first + `#>> '{}'`: the SQL/JSON path engine takes the same
-// '$.a.b' literal the macro renders, and #>> '{}' unwraps the jsonb scalar to
-// unquoted text — matching SQLite's unquoted-scalar json_extract semantics for
-// predicate/projection descent.
+// jsonb_path_query_first takes the same '$.a.b' literal the macro renders, and `#>> '{}'` unwraps
+// the jsonb scalar to unquoted text — matching SQLite's unquoted-scalar json_extract semantics
+// for predicate/projection descent.
 def private _postgres_render_json_extract(target : string; jsonPath : string) : string => "(jsonb_path_query_first(({target})::jsonb, {jsonPath}::jsonpath) #>> '\{\}')"
 
 def private _postgres_quote_id(id : string) : string => sql_quote_id(id)

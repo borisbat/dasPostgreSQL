@@ -1,4 +1,5 @@
 options gen2
+options _comment_hygiene = true
 require postgres/postgres_boost
 require daslib/sql_linq
 require daslib/fio

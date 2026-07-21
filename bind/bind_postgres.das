@@ -1,4 +1,5 @@
 options gen2
+options _comment_hygiene = true
 require cbind/cbind_boost
 require daslib/fio
 require daslib/defer
@@ -84,10 +85,9 @@ class PostgresGen : CppGenBind {
     }
     def override skip_function(var c : CXCursor) : bool {
         let fname = string(clang_getCursorSpelling(c))
-        // size_t / pg_int64 / pg_usec_time_t carriers: the binder canonicalizes those
-        // to `unsigned long long`/`long long`, which is a DIFFERENT type from LP64
-        // Linux's `unsigned long`-flavored uint64_t — the generated makeExtern then
-        // fails under gcc (same trap as dasDuckDB's duckdb_validity_* skip).
+        // size_t / pg_int64 / pg_usec_time_t carriers: the binder canonicalizes those to `unsigned long
+        // long`/`long long`, a DIFFERENT type from LP64 Linux's `unsigned long`-flavored uint64_t, so the
+        // generated makeExtern fails under gcc (same trap as dasDuckDB's duckdb_validity_* skip).
         if (fname |> starts_with("PQescape") || fname == "PQunescapeBytea" || fname == "PQresultMemorySize"
                 || fname == "PQsocketPoll" || fname == "PQgetCurrentTimeUSec"
                 // large objects (also pg_int64 carriers in the 64-bit forms)
