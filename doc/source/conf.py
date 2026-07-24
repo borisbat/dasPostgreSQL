@@ -71,4 +71,6 @@ html_context = {
 # Forge dark retoken — matches daslang.io/doc/ visually.
 html_css_files = ['custom.css', 'custom-patch.css']
 
+html_js_files = ['sidebar.js']
+
 htmlhelp_basename = 'daspostgresql_doc'
