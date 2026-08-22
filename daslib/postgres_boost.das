@@ -6,7 +6,7 @@ options strict_smart_pointers
 
 module postgres_boost shared public
 
-require postgres
+require postgres public
 require postgres/postgres_stmt public
 require postgres/postgres_provider public
 require strings
