@@ -10,4 +10,5 @@ def initialize(project_path : string) {
     for (path in postgres_paths) {
         register_native_path("postgres", "{path}", "{project_path}/daslib/{path}.das")
     }
+    register_module_group("sql_provider", "postgres/postgres_provider")
 }

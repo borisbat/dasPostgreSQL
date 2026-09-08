@@ -1,7 +1,8 @@
 PostgreSQL's entry in the neutral SQL provider registry (``daslib/sql_provider``)
-— the compile-time half of the provider. ``register_postgres_provider`` is
-called by ``sql_register_present_providers`` (from ``daslib/sql_boost``) in
-every macro context that analyzes ``_sql`` chains; the entry carries the
+— the compile-time half of the provider. The module joins the ``sql_provider``
+group from its descriptor, and ``register_provider`` is the group entry that
+``sql_register_present_providers`` (from ``daslib/sql_boost``) calls in every
+macro context that analyzes ``_sql`` chains. The entry carries the
 ``PgStmt?`` statement-type factories the macros splice into emitted bind/reader
 blocks, the dialect hooks (``?`` placeholders — renumbered to ``$n`` by the
 boost's execute path; ``jsonb_path_query_first(...) #>> '{}'`` for ``@sql_json``
