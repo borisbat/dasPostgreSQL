@@ -30,3 +30,7 @@ doc/source/__pycache__/
 # runtime / scratch
 *.log
 _smoke_*.das
+
+# daslang writes these beside the descriptor and under the cwd on every run
+.das_module.manifest
+.jitted_scripts/

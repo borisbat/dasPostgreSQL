@@ -12,6 +12,7 @@
 namespace das {
 
 void Module_dasPOSTGRESQL::initMain() {
+    registerModuleGroupMember("sql_provider", "postgres/postgres_provider");
 
     addExtern<DAS_BIND_FUN(das_pq_exec_params)>(*this,lib,"pq_exec_params",
         SideEffects::worstDefault, "das_pq_exec_params")

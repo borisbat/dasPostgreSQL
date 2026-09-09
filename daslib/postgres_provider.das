@@ -18,8 +18,8 @@ require daslib/templates_boost
 //! PostgreSQL's `SqlProviderInfo` registration shim — the lean bridge between the raw
 //! `postgres` libpq binding and the neutral registry in `daslib/sql_provider`.
 //! Deliberately does NOT require `postgres/postgres_boost`: `daslib/sql_boost` pulls
-//! this file into every consulting macro context via `require ?postgres`, and requiring
-//! the boost here would cycle. Runtime surface (SqlRunner, exec/query, runner helpers)
+//! this file into every consulting macro context as a member of the `sql_provider`
+//! group, and requiring the boost here would cycle. Runtime surface (SqlRunner, exec/query, runner helpers)
 //! lives in `postgres/postgres_boost`.
 
 def postgres_sql_type(t : SqlType) : string {
@@ -115,10 +115,10 @@ def private _postgres_render_json_extract(target : string; jsonPath : string) : 
 
 def private _postgres_quote_id(id : string) : string => sql_quote_id(id)
 
-def register_postgres_provider {
-    //! Registers the postgres `SqlProviderInfo` entry in the CURRENT macro context.
-    //! Reached via `sql_register_present_providers` (daslib/sql_boost) from each
-    //! consulting macro module's own `[_macro]`.
+def register_provider {
+    //! The `sql_provider` group entry: registers the postgres `SqlProviderInfo` in the
+    //! CURRENT macro context. Reached through `sql_register_present_providers`
+    //! (daslib/sql_boost) from each consulting macro module's own `[_macro]`.
     var info = SqlProviderInfo(
         name = "postgres",
         runnerModule = "postgres_boost",
