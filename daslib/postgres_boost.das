@@ -260,7 +260,7 @@ let private OID_BYTEA = 17u
 def private _pg_set_param(var stmt : PgStmt?; idx : int; val : string; oid : uint; is_null : bool) {
     while (length(stmt.params) < idx) {
         stmt.params |> push("")
-        stmt.nulls |> push(uint8(1))
+        stmt.nulls |> push(1u8)
         stmt.oids |> push(0u)
     }
     stmt.params[idx - 1] = val
@@ -332,8 +332,8 @@ def private _hex_nibble(c : int) : int {
 def sql_read_witness(stmt : PgStmt?; col : int; witness : int64) : int64 {
     let v = PQgetvalue(stmt.res, stmt.row, col)
     // native BOOLEAN columns come back as 't'/'f' in text mode
-    if (v == "t") return int64(1)
-    if (v == "f") return int64(0)
+    if (v == "t") return 1l
+    if (v == "f") return 0l
     return to_int64(v)
 }
 
@@ -819,7 +819,7 @@ def try_insert(db : SqlRunner; row : auto(TT)) : Result<int64, string> {
             _::_sql_bind_row(stmt, row, !pk_unset)
         }, "insert")
         if (r |> is_err) return err(r |> unwrap_err, type<int64>)
-        return ok(int64(0), type<string>)
+        return ok(0l, type<string>)
     }
     let sql = "{base_sql} RETURNING {sql_quote_id(pk_name)}"
     return <- db |> try_one_row(sql, $(var stmt : PgStmt?) {
@@ -852,7 +852,7 @@ def try_insert(db : SqlRunner; row : auto(TT); name : string) : Result<int64, st
             _::_sql_bind_row(stmt, row, !pk_unset)
         }, "insert")
         if (r |> is_err) return err(r |> unwrap_err, type<int64>)
-        return ok(int64(0), type<string>)
+        return ok(0l, type<string>)
     }
     let sql = "{base_sql} RETURNING {sql_quote_id(pk_name)}"
     return <- db |> try_one_row(sql, $(var stmt : PgStmt?) {
@@ -874,7 +874,7 @@ def insert(db : SqlRunner; row : auto(TT); name : string) : int64 {
 def try_insert(db : SqlRunner; rows : array<auto(TT)>) : Result<int64, string> {
     //! Batched INSERT inside a single transaction (joins an ambient one). All rows
     //! must agree on PK presence. ``Ok(last pk)`` on success.
-    if (empty(rows)) return ok(int64(0), type<string>)
+    if (empty(rows)) return ok(0l, type<string>)
     let pk_unset = _::_sql_pk_is_unset(rows[0])
     for (i in 1..length(rows)) {
         if (_::_sql_pk_is_unset(rows[i]) != pk_unset) return err("insert: rows mix PK-set and PK-unset (row 0 vs row {i}); partition the array before calling insert", type<int64>)
@@ -884,7 +884,7 @@ def try_insert(db : SqlRunner; rows : array<auto(TT)>) : Result<int64, string> {
         let be = db |> try_exec("BEGIN")
         if (be |> is_some) return err(be |> unwrap, type<int64>)
     }
-    var last_id = int64(0)
+    var last_id = 0l
     for (row in rows) {
         let r = db |> try_insert(row)
         if (r |> is_err) {

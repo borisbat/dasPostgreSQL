@@ -28,9 +28,9 @@ def main {
         db |> exec("DROP TABLE IF EXISTS \"Users\"")
         db |> create_table(type<User>)
         db |> insert([
-            User(Id = int64(0), Name = "Ada", Age = 36),
-            User(Id = int64(0), Name = "Bob", Age = 41),
-            User(Id = int64(0), Name = "Cid", Age = 17)])
+            User(Id = 0l, Name = "Ada", Age = 36),
+            User(Id = 0l, Name = "Bob", Age = 41),
+            User(Id = 0l, Name = "Cid", Age = 17)])
 
         let adults = _sql(db |> select_from(type<User>) |> _where(_.Age >= 18) |> _order_by(_.Name))
         for (u in adults) {
